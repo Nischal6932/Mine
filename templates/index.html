@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Farming Assistant</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="header">
+        <h1>🌿 Smart Farming Assistant</h1>
+        <p>AI-powered plant disease detection & crop analysis</p>
+    </div>
+
+    <div class="main-card">
+        <form method="POST" enctype="multipart/form-data">
+
+            <div class="form-grid">
+                <!-- File Upload -->
+                <div class="form-group full-width">
+                    <label>Upload Leaf Image</label>
+                    <div class="file-upload-wrapper">
+                        <input type="file" name="image" id="fileInput" accept="image/*" required class="file-upload-input">
+                        <div class="file-upload-box" id="uploadBox">
+                            <div class="file-upload-icon">📷</div>
+                            <div class="file-upload-text">Click to upload or drag & drop</div>
+                            <div class="file-upload-hint">Supports JPG, PNG, WEBP</div>
+                        </div>
+                    </div>
+                    <div class="preview-container" id="previewContainer">
+                        <img id="preview" class="preview-image">
+                    </div>
+                </div>
+
+                <!-- Crop Selection -->
+                <div class="form-group">
+                    <label>Select Crop</label>
+                    <div class="select-wrapper">
+                        <select name="crop" required>
+                            <option value="Tomato">Tomato</option>
+                            <option value="Potato">Potato</option>
+                            <option value="Pepper">Pepper</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Soil Type -->
+                <div class="form-group">
+                    <label>Soil Type</label>
+                    <div class="select-wrapper">
+                        <select name="soil" required>
+                            <option value="Clay">Clay</option>
+                            <option value="Loam">Loam</option>
+                            <option value="Sandy">Sandy</option>
+                            <option value="Silt">Silt</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Soil Moisture -->
+                <div class="form-group full-width">
+                    <label>Soil Moisture Level</label>
+                    <div class="slider-container">
+                        <input type="range" min="0" max="100" value="40" name="moisture" id="moistureSlider">
+                        <span class="slider-value" id="moistureValue">40%</span>
+                    </div>
+                </div>
+
+                <!-- Weather -->
+                <div class="form-group full-width">
+                    <label>Current Weather</label>
+                    <div class="select-wrapper">
+                        <select name="weather" required>
+                            <option value="Dry">Dry</option>
+                            <option value="Humid">Humid</option>
+                            <option value="Rainy">Rainy</option>
+                            <option value="Hot">Hot</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="analyze-btn">
+                🔍 Analyze My Crop
+            </button>
+
+        </form>
+    </div>
+
+    {% if result %}
+    <div class="results-section">
+        <div class="results-card">
+
+            <div class="prediction-header">
+                <div class="prediction-title">{{ result }}</div>
+                {% if confidence %}
+                <div class="confidence-wrapper">
+                    <div class="confidence-label">
+                        <span>Confidence</span>
+                        <span>{{ confidence }}%</span>
+                    </div>
+                    <div class="confidence-bar-bg">
+                        <div class="confidence-bar-fill" style="width: {{ confidence }}%"></div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="info-grid">
+                {% if description %}
+                <div class="info-card">
+                    <div class="info-card-title">📋 Disease Description</div>
+                    <div class="info-card-content">{{ description }}</div>
+                </div>
+                {% endif %}
+
+                {% if treatment %}
+                <div class="info-card">
+                    <div class="info-card-title">💊 Recommended Treatment</div>
+                    <div class="info-card-content">{{ treatment }}</div>
+                </div>
+                {% endif %}
+
+                {% if soil_advice %}
+                <div class="info-card">
+                    <div class="info-card-title">🌱 Soil Compatibility</div>
+                    <div class="info-card-content">{{ soil_advice }}</div>
+                </div>
+                {% endif %}
+
+                {% if irrigation_advice %}
+                <div class="info-card">
+                    <div class="info-card-title">💧 Irrigation Advice</div>
+                    <div class="info-card-content">{{ irrigation_advice }}</div>
+                </div>
+                {% endif %}
+
+                {% if weather_analysis %}
+                <div class="info-card">
+                    <div class="info-card-title">🌤️ Weather Analysis</div>
+                    <div class="info-card-content">{{ weather_analysis }}</div>
+                </div>
+                {% endif %}
+            </div>
+
+            {% if top2_predictions %}
+            <div class="alt-predictions">
+                <div class="alt-predictions-title">Alternative Possibilities</div>
+                <div class="alt-list">
+                    {% for disease, prob in top2_predictions %}
+                    <div class="alt-item">
+                        <span class="alt-name">{{ disease }}</span>
+                        <span class="alt-prob">{{ (prob*100)|round(2) }}%</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+<script>
+// File upload preview
+document.getElementById("fileInput").onchange = function(evt) {
+    const [file] = evt.target.files;
+    if (file) {
+        document.getElementById("preview").src = URL.createObjectURL(file);
+        document.getElementById("previewContainer").classList.add("show");
+        document.getElementById("uploadBox").style.display = "none";
+    }
+};
+
+// Moisture slider
+document.getElementById("moistureSlider").oninput = function() {
+    document.getElementById("moistureValue").textContent = this.value + "%";
+};
+
+// Drag and drop
+const dropZone = document.getElementById("uploadBox");
+dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.style.borderColor = '#22c55e';
+    dropZone.style.background = 'rgba(34, 197, 94, 0.15)';
+});
+
+dropZone.addEventListener('dragleave', () => {
+    dropZone.style.borderColor = 'rgba(34, 197, 94, 0.3)';
+    dropZone.style.background = 'rgba(34, 197, 94, 0.05)';
+});
+
+dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) {
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        document.getElementById("fileInput").files = dt.files;
+        document.getElementById("preview").src = URL.createObjectURL(file);
+        document.getElementById("previewContainer").classList.add("show");
+        document.getElementById("uploadBox").style.display = "none";
+    }
+});
+</script>
+
+</body>
+</html>
